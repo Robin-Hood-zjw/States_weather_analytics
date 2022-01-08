@@ -1,0 +1,292 @@
+---
+###Final Project
+###Name: JIAWEN ZHANG
+###UMID: 67753497
+##title: "Final Project"
+##output: html_document
+---
+```{r}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(moderndive)
+library(skimr)
+library(infer)
+```
+
+#temp: Mean temperature for the day in degrees Fahrenheit to tenths.
+
+#max: Maximum temperature reported during the day in Fahrenheit to tenths--
+#time of max temp report varies by country and region, so this will sometimes
+#not be the max for the calendar day.
+
+#min: Minimum temperature reported during the day in Fahrenheit to tenths--
+#time of min temp report varies by country and region, so this will sometimes
+#not be the min for the calendar day.
+
+#stp: Mean station pressure for the day in millibars to tenths.
+#slp: Mean sea level pressure for the day in millibars to tenths.
+#dewp: Mean dew point for the day in degrees Fahrenheit to tenths.
+#wdsp: Mean wind speed for the day in knots to tenths.
+#prcp: Total precipitation (rain and/or melted snow) reported during the day in inches and hundredths;
+#will usually not end with the midnight observation--i.e., may include latter part of previous day.
+#.00 indicates no measurable precipitation (includes a trace).
+#fog: Indicators (1 = yes, 0 = no/not reported) for the occurrence during the day
+
+#knitr::opts_knit$set(root.dir = '~/Downloads/Discussion 05')
+
+#Read the target file and browse the data.
+```{r setup, include=FALSE}
+getwd()
+setwd("C:/Users/92437/Desktop/Operation_M/registered courses/Fall_2021/544/final project")
+getwd()
+weather_data <- read.csv("training_data_with_weather_info_week_1.csv")
+glimpse(weather_data)
+```
+
+#Switch the data tyoe of th <Date> with <Date> tyep. And Order the month in month order.
+```{r cars}
+weather_data$Date <- as.Date(weather_data$Date,"%m/%d/%y")
+weather_data$month <- factor(weather_data$Month,levels = c("January","February","March"))
+#weather_data$Month <- as.Date(weather_data$Month,"%B")
+glimpse(weather_data)
+```
+
+#Filter the whole weather dataset to find all the data associated with New York State and Michigan State
+```{r pressure, echo=FALSE}
+#Find specific data associated with New York State
+all_NYS_data <- weather_data %>%
+  filter(Province.State == "New York")
+
+View(all_NYS_data)
+```
+
+```{r}
+#Find specific data associated with Michigan State
+all_MIS_data <- weather_data %>%
+  filter(Province.State == "Michigan")
+
+View(all_MIS_data)
+```
+
+
+#Use line grah
+```{r}
+#line graph for wind speed of New York State in January
+NYS_wind_Jan <- all_NYS_data %>%
+  filter(Month == "January") %>%
+  select(Date,wdsp)
+
+ggplot(NYS_wind_Jan,aes(x=Date,y=wdsp))+
+  geom_line(alpha=0.6)+
+  geom_point(alpha=0.5,size=0.9)+
+  ylim(0,15)
+```
+
+```{r}
+#line graph for wind speed of Michigan State in January
+MIS_wind_Jan <- all_MIS_data %>%
+  filter(Month == "January") %>%
+  select(Date,wdsp)
+
+ggplot(MIS_wind_Jan,aes(x=Date,y=wdsp))+
+  geom_line(alpha=0.6)+
+  geom_point(alpha=0.5,size=0.9)+
+  ylim(0,15)
+```
+
+
+```{r}
+#The data about the precipitation in New York State
+NYS_prec <- all_NYS_data %>%
+  select(month, prcp)
+
+NYS_prec_summary <- NYS_prec %>%
+  filter(month != "")%>%
+  group_by(month) %>%
+  summarise(prec_mean = mean(prcp, na.rm = TRUE),
+            prec_sd = sd(prcp, na.rm =TRUE),
+            daily_max_prec = max(prcp),
+            daily_min_prec = min(prcp),
+            first_quantile = quantile(prcp, 0.25, na.rm=TRUE),
+            second_quantile = quantile(prcp, 0.5, na.rm=TRUE),
+            third_quantile = quantile(prcp, 0.75, na.rm=TRUE)
+            )
+```
+
+```{r}
+#The data about the precipitation in michigan State
+MIS_prec <- all_MIS_data %>%
+  select(month, prcp)
+
+MIS_prec_summary <- MIS_prec %>%
+  filter(month != "")%>%
+  group_by(month) %>%
+  summarise(prec_mean = mean(prcp, na.rm = TRUE),
+            prec_sd = sd(prcp, na.rm =TRUE),
+            daily_max_prec = max(prcp),
+            daily_min_prec = min(prcp),
+            first_quantile = quantile(prcp, 0.25, na.rm=TRUE),
+            second_quantile = quantile(prcp, 0.5, na.rm=TRUE),
+            third_quantile = quantile(prcp, 0.75, na.rm=TRUE)
+            )
+```
+
+
+#Explore all the data associated with the temperature, whatever maximum temperature, minimum temperature,mean temperature and maximum temperature in each month in New York State and Michigan State.
+```{r}
+#Explore the data about temperatures in New York State, and show all the data in the form of box-plot
+NYS_temp_data <- all_NYS_data %>%
+  summarise(month = Month,
+            date = Date,
+            max_temp = max,
+            min_temp = min,
+            mean_temp = temp
+            ) %>%
+  mutate(max_temp_changes = max_temp - min_temp)
+
+ggplot(NYS_temp_data,aes(x=factor(month),y=mean_temp))+
+  geom_boxplot()
+```
+
+```{r}
+#Explore the data about temperatures in Michigan State, and show all the data in the form of box-plot
+MIS_temp_data <- all_MIS_data %>%
+  summarise(month = Month,
+            date = Date,
+            max_temp = max,
+            min_temp = min,
+            mean_temp = temp
+            ) %>%
+  mutate(max_temp_changes = max_temp - min_temp)
+
+ggplot(MIS_temp_data,aes(x=factor(month),y=mean_temp))+
+  geom_boxplot()
+```
+
+#Use filter() function to find the temperature data of New York State in February.
+```{r}
+#visualize the February temperature changes in New York State and Michigan State with line graphs
+NYS_temp_data_Feb <- NYS_temp_data %>%
+  filter(month == "February")
+
+ggplot(NYS_temp_data_Feb,aes(x=date,y=mean_temp))+
+  geom_line(size=1.5,alpha=0.5)
+```
+
+#Explore the relation between timeline and temperature, and use linear model to visualize the relationship
+```{r}
+#visualize the temperature changes in New York State and Michigan State by day, and model the linear relationship
+ggplot(NYS_temp_data,aes(x=date,y=mean_temp))+
+  geom_point(alpha=0.2,size=2)+
+  xlab("timeline")+
+  ylab("temperature")+
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+#Select 20 days from Febuaryu as samples to be sampling distribution for both New York State and Michigan State
+```{r}
+#Explore the regression models of the factors in New York State and Michigan State in February
+NYS_sample <- all_NYS_data %>%
+  filter(month == "February") %>%
+  sample_n(size = 20)
+
+NYS_sample %>% skim()
+```
+
+```{r}
+MIS_sample <- all_MIS_data %>%
+  filter(month == "February") %>%
+  sample_n(size = 20)
+
+MIS_sample %>% skim()
+```
+
+
+```{r}
+##Explore the relationship between dew point and wind speed in New York State and Michigan State with simple linear models
+NYS_sample %>%
+  get_correlation(formula = dewp ~ wdsp)
+
+ggplot(NYS_sample,aes(x = dewp, y = wdsp)) +
+  geom_point(alpha=0.2,size=2) +
+  labs(x = "Dew Point",
+       y = "Wind Speed",
+       title = "Relationship between dew point and wind speed") +
+  geom_smooth(method = "lm", se = FALSE,color = "red")
+
+NYS_model <- lm(dewp ~ wdsp,data = NYS_sample)
+
+get_regression_table(NYS_model)
+```
+
+```{r}
+MIS_sample %>%
+  get_correlation(formula = dewp ~ wdsp)
+
+ggplot(MIS_sample,aes(x = dewp, y = wdsp)) +
+  geom_point(alpha=0.3,size=2) +
+  labs(x = "Dew Point",
+       y = "Wind Speed",
+       title = "Relationship between dew point and wind speed") +
+  geom_smooth(method = "lm", se = FALSE,color = "red")
+
+MIS_model <- lm(dewp ~ wdsp,data = MIS_sample)
+
+get_regression_table(MIS_model)
+```
+
+```{r}
+##Explore the relationship among station pressure, sea level pressure and fog in New York State in February
+NYS_sample %>% 
+  select(stp,slp,fog) %>%
+  skim()
+
+NYS_sample %>%
+  get_correlation(formula = stp ~ slp)
+```
+
+```{r}
+ggplot(NYS_sample,aes(x=stp, y=slp, color=factor(fog))) +
+  geom_point(alpha=0.25,size = 2.5) +
+  labs(x = "average station pressure",
+       y = "average sea level pressure",
+       color= "fog or not fog",
+       title = "Relationship between station pressure, sea level pressure and fog conditions")+
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+NYS_model3 <- lm(stp ~ slp * fog, data = NYS_sample)
+get_regression_table(NYS_model3)
+```
+
+```{r}
+NYS_MIS_Feb_info <- weather_data %>%
+  filter((Province.State == "Michigan" | Province.State == "New York") & Month == "February")
+glimpse(NYS_MIS_Feb_info)
+
+obs_diff_prop <- NYS_MIS_Feb_info %>%
+  specify(stp ~ Province.State) %>%
+  calculate(stat = "diff in means", order = c("New York","Michigan"))
+print(obs_diff_prop)
+
+
+null_distribution <- NYS_MIS_Feb_info %>%
+  specify(formula = stp ~ Province.State) %>%
+  hypothesise(null = "independence") %>%
+  generate(reps = 1000,type ="permute") %>%
+  calculate(stat = "diff in means", order = c("New York", "Michigan")) 
+
+head(null_distribution)
+
+visualize(null_distribution, bins = 6) + 
+  shade_p_value(obs_stat = obs_diff_prop, direction = "right")
+
+
+set.seed(200)
+null_distribution %>% 
+  get_p_value(obs_stat = obs_diff_prop, direction = "right")
+##if p-value is larger than 0.05, so we will not reject the null hypothesis.
+```
+
